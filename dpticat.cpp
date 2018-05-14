@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <ctype.h>
 #include <time.h>
+//#include <random.h>
 
 #include "dpcdecl.h"
 #include "dmgr.h"
@@ -22,7 +23,7 @@ char dev_name[cchDvcNameMax + 1];
 
 int main( int argc, char* argv[] ) {
   HIF hif = hifInvalid;
-  
+  srand((unsigned int)time(NULL));
   if(argc < 2) {
     fprintf(stderr, "ERROR: no device specified\n");
     fflush(stderr);
@@ -76,8 +77,9 @@ int main( int argc, char* argv[] ) {
   byte *in_bytes = new byte[n_bytes*4];
   
   for(int test_count = 0; test_count < N_TESTS; test_count++){
+    printf("Test %i\n", test_count);
     for(int i = 0; i < n_bytes*4; i++){
-      out_bytes[i] = (0x80*test_count)+(0x7F-i);
+      out_bytes[i] = rand();
       in_bytes[i] = 0xBA;
     }
     
