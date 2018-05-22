@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <ctype.h>
 #include <time.h>
+#include <signal.h>
 //#include <random.h>
 
 #include "dpcdecl.h"
@@ -16,13 +17,20 @@
 #include "dpti.h"
 
 #define N_TESTS 256
+#define W_BYTES 8
 
 typedef unsigned char byte;
 
 char dev_name[cchDvcNameMax + 1];
+HIF hif = hifInvalid;
+
+void cancel_out(int signum){
+  fprintf(stderr, "Ctrl-C pressed, exiting...\n");
+  DmgrClose(hif);
+  exit(1);
+}
 
 int main( int argc, char* argv[] ) {
-  HIF hif = hifInvalid;
   srand((unsigned int)time(NULL));
   if(argc < 2) {
     fprintf(stderr, "ERROR: no device specified\n");
@@ -40,7 +48,7 @@ int main( int argc, char* argv[] ) {
     exit(2);
   }
   printf("Opened HIF\n");
-  
+  signal(SIGINT, &cancel_out);
   int n_ports;
   
   DptiGetPortCount(hif, &n_ports);
@@ -73,15 +81,16 @@ int main( int argc, char* argv[] ) {
   }
   
   
-  byte *out_bytes = new byte[2];
-  byte *in_bytes = new byte[255];
+  int n_bytes = 128;
+  byte *out_bytes = new byte[1];
+  byte *in_bytes = new byte[n_bytes];
   
   for(int test_count = 0; test_count < N_TESTS; test_count++){
     printf("Test %i\n", test_count);
-    int n_bytes = rand() & 0xFF;
+    //int n_bytes = rand() & 0xFF;
     out_bytes[0] = n_bytes;
-    out_bytes[1] = 255 - n_bytes;
-    for(int i = 0; i < 255; i++){
+    //out_bytes[1] = 255 - n_bytes;
+    for(int i = 0; i < n_bytes; i++){
       in_bytes[i] = 0xBA;
     }
     
@@ -94,27 +103,22 @@ int main( int argc, char* argv[] ) {
     
     DptiIO(hif, NULL, 0, in_bytes, out_bytes[0], false);
 
-    printf("Data Received\nRequesting Remaining %i bytes\n", out_bytes[1]);
+    //printf("Data Received\nRequesting Remaining %i bytes\n", out_bytes[1]);
     
-    DptiIO(hif, out_bytes+1, 1, NULL, 0, false);
+    //DptiIO(hif, out_bytes+1, 1, NULL, 0, false);
     
-    printf("Request Sent\nReceiving %i bytes\n", out_bytes[1]);
+    //printf("Request Sent\nReceiving %i bytes\n", out_bytes[1]);
     
-    DptiIO(hif, NULL, 0, in_bytes+out_bytes[0], out_bytes[1], false);
+    //DptiIO(hif, NULL, 0, in_bytes+out_bytes[0], out_bytes[1], false);
         
-    printf("Data received, checking...\n");
+    printf("Data received, printing...\n");
     
-    for(int i = 0; i < out_bytes[0]; i++){
-      if((out_bytes[0]-i) != in_bytes[i]){
-	printf("Verification error: expected: %02x, received: %02x @ %i\n", out_bytes[0]-i, in_bytes[i], i);
+    for(int i = 0; i < out_bytes[0]; i+=W_BYTES){
+      for(int j = 0; j < W_BYTES; j++){
+	printf("%02x", in_bytes[i+j]);
       }
-    }
-    for(int i = 0; i < out_bytes[1]; i++){
-      if((out_bytes[1]-i) != in_bytes[i+out_bytes[0]]){
-	printf("Verification error: expected: %02x, received: %02x @ %i\n", out_bytes[1]-i, in_bytes[i+out_bytes[0]], i);
-      }
-    }
-    
+      printf("\n");
+    }    
   }
   
   DmgrClose(hif);
