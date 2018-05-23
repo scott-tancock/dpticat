@@ -141,7 +141,7 @@ int main( int argc, char* argv[] ) {
       if(leftover){
 	curr_fine = curr_fine | (((unsigned int)(in_bytes[i+W_BYTES-1-(FINE>>3)] & ((1 << leftover) - 1))) << (FINE & (~0x7)));
       }
-      double curr_time = (curr_fine * 0.000000000015) + (curr_coarse / 120000000.0);
+      double curr_time = ((curr_coarse+1) / 120000000.0) - (curr_fine * 0.000000000015);
       printf("Coarse: %llu, fine: %u, time: %lf\n", curr_coarse, curr_fine, curr_time);
       printf("CDiff: %llu, FDiff: %i, TDiff: %le\n", curr_coarse - prev_coarse, (int)curr_fine - (int)prev_fine,curr_time - prev_time);
       prev_coarse = curr_coarse;
