@@ -16,8 +16,11 @@
 #include "dmgr.h"
 #include "dpti.h"
 
-#define N_TESTS 256
+#define N_TESTS 65536
 #define W_BYTES 8
+#define WIDTH (W_BYTES * 8)
+#define FINE 10
+#define COARSE (WIDTH - FINE)
 
 typedef unsigned char byte;
 
@@ -112,13 +115,39 @@ int main( int argc, char* argv[] ) {
     //DptiIO(hif, NULL, 0, in_bytes+out_bytes[0], out_bytes[1], false);
         
     printf("Data received, printing...\n");
+    unsigned long long prev_coarse = 0;
+    unsigned int prev_fine = 0;
+    double prev_time = 0;
     
     for(int i = 0; i < out_bytes[0]; i+=W_BYTES){
       for(int j = 0; j < W_BYTES; j++){
 	printf("%02x", in_bytes[i+j]);
       }
       printf("\n");
-    }    
+      unsigned long long curr_coarse = 0;
+      for(int j = 0; j+8 <= COARSE; j += 8){
+	curr_coarse = curr_coarse << 8 | in_bytes[i+(j >> 3)];
+      }
+      int leftover = COARSE & 0x7;
+      if(leftover){
+	printf("Coarse before: %llu, extra: %x\n", curr_coarse << leftover, (in_bytes[i + (COARSE >> 3)] >> (8-leftover)));
+	curr_coarse = curr_coarse << leftover  | (in_bytes[i + (COARSE >> 3)] >> (8-leftover));
+      }
+      unsigned int curr_fine = 0;
+      for(int j = 0; j+8 <= FINE; j += 8){
+	curr_fine = curr_fine | (((unsigned int)in_bytes[i+W_BYTES-1-(j>>3)]) << j);
+      }
+      leftover = FINE & 0x7;
+      if(leftover){
+	curr_fine = curr_fine | (((unsigned int)(in_bytes[i+W_BYTES-1-(FINE>>3)] & ((1 << leftover) - 1))) << (FINE & (~0x7)));
+      }
+      double curr_time = (curr_fine * 0.000000000015) + (curr_coarse / 120000000.0);
+      printf("Coarse: %llu, fine: %u, time: %lf\n", curr_coarse, curr_fine, curr_time);
+      printf("CDiff: %llu, FDiff: %i, TDiff: %le\n", curr_coarse - prev_coarse, (int)curr_fine - (int)prev_fine,curr_time - prev_time);
+      prev_coarse = curr_coarse;
+      prev_fine = curr_fine;
+      prev_time = curr_time;
+    }
   }
   
   DmgrClose(hif);
