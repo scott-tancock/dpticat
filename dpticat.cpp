@@ -73,45 +73,47 @@ int main( int argc, char* argv[] ) {
   }
   
   
-  byte *out_bytes = new byte[2];
-  byte *in_bytes = new byte[255];
+  byte *out_bytes = new byte[4];
+  byte *in_bytes = new byte[254];
   
   for(int test_count = 0; test_count < N_TESTS; test_count++){
     printf("Test %i\n", test_count);
-    int n_bytes = rand() & 0xFF;
-    out_bytes[0] = n_bytes;
-    out_bytes[1] = 255 - n_bytes;
-    for(int i = 0; i < 255; i++){
+    int n_bytes = rand() & 0xFE;
+    out_bytes[0] = 0;
+    out_bytes[1] = n_bytes;
+    out_bytes[2] = 0;
+    out_bytes[3] = 254-n_bytes;
+    for(int i = 0; i < 254; i++){
       in_bytes[i] = 0xBA;
     }
     
-    printf("Requesting %i bytes\n", out_bytes[0]);
+    printf("Requesting %i bytes\n", out_bytes[1]);
     
-    DptiIO(hif, out_bytes, 1, NULL, 0, false);
+    DptiIO(hif, out_bytes, 2, NULL, 0, false);
     
 
-    printf("Request Sent\nReceiving %i bytes\n", out_bytes[0]);
-    
-    DptiIO(hif, NULL, 0, in_bytes, out_bytes[0], false);
-
-    printf("Data Received\nRequesting Remaining %i bytes\n", out_bytes[1]);
-    
-    DptiIO(hif, out_bytes+1, 1, NULL, 0, false);
-    
     printf("Request Sent\nReceiving %i bytes\n", out_bytes[1]);
     
-    DptiIO(hif, NULL, 0, in_bytes+out_bytes[0], out_bytes[1], false);
+    DptiIO(hif, NULL, 0, in_bytes, out_bytes[1], false);
+
+    printf("Data Received\nRequesting Remaining %i bytes\n", out_bytes[3]);
+    
+    DptiIO(hif, out_bytes+2, 2, NULL, 0, false);
+    
+    printf("Request Sent\nReceiving %i bytes\n", out_bytes[3]);
+    
+    DptiIO(hif, NULL, 0, in_bytes+out_bytes[1], out_bytes[3], false);
         
     printf("Data received, checking...\n");
     
-    for(int i = 0; i < out_bytes[0]; i++){
-      if((out_bytes[0]-i) != in_bytes[i]){
-	printf("Verification error: expected: %02x, received: %02x @ %i\n", out_bytes[0]-i, in_bytes[i], i);
+    for(int i = 0; i < out_bytes[1]; i++){
+      if((out_bytes[1]-i) != in_bytes[i]){
+	printf("Verification error: expected: %02x, received: %02x @ %i\n", out_bytes[1]-i, in_bytes[i], i);
       }
     }
-    for(int i = 0; i < out_bytes[1]; i++){
-      if((out_bytes[1]-i) != in_bytes[i+out_bytes[0]]){
-	printf("Verification error: expected: %02x, received: %02x @ %i\n", out_bytes[1]-i, in_bytes[i+out_bytes[0]], i);
+    for(int i = 0; i < out_bytes[3]; i++){
+      if((out_bytes[3]-i) != in_bytes[i+out_bytes[1]]){
+	printf("Verification error: expected: %02x, received: %02x @ %i\n", out_bytes[3]-i, in_bytes[i+out_bytes[1]], i);
       }
     }
     
