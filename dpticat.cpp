@@ -100,26 +100,27 @@ int main( int argc, char* argv[] ) {
   }
   
   int n_bytes = 128;
-  byte *out_bytes = new byte[1];
+  byte *out_bytes = new byte[2];
   byte *in_bytes = new byte[n_bytes];
   
   for(int test_count = 0; test_count < N_TESTS; test_count++){
     fprintf(stderr, "Test %i\n", test_count);
     //int n_bytes = rand() & 0xFF;
-    out_bytes[0] = n_bytes;
+    out_bytes[0] = 0;
+    out_bytes[1] = n_bytes;
     //out_bytes[1] = 255 - n_bytes;
     for(int i = 0; i < n_bytes; i++){
       in_bytes[i] = 0xBA;
     }
     
-    printf("Requesting %i bytes\n", out_bytes[0]);
+    printf("Requesting %i bytes\n", out_bytes[1]);
     
-    DptiIO(hif, out_bytes, 1, NULL, 0, false);
+    DptiIO(hif, out_bytes, 2, NULL, 0, false);
     
 
-    printf("Request Sent\nReceiving %i bytes\n", out_bytes[0]);
+    printf("Request Sent\nReceiving %i bytes\n", out_bytes[1]);
     
-    DptiIO(hif, NULL, 0, in_bytes, out_bytes[0], false);
+    DptiIO(hif, NULL, 0, in_bytes, out_bytes[1], false);
 
     //printf("Data Received\nRequesting Remaining %i bytes\n", out_bytes[1]);
     
@@ -134,7 +135,7 @@ int main( int argc, char* argv[] ) {
     unsigned int prev_fine = 0;
     double prev_time = 0;
     
-    for(int i = 0; (i+W_BYTES) <= out_bytes[0]; i+=W_BYTES){
+    for(int i = 0; (i+W_BYTES) <= out_bytes[1]; i+=W_BYTES){
       fprintf(stderr, "i = %i\n", i);
       int j;
       for(j = 0; j < W_BYTES; j++){
