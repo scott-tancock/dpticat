@@ -19,7 +19,7 @@
 #include "dmgr.h"
 #include "dpti.h"
 
-#define N_TESTS 65536
+#define N_TESTS 2048
 #define W_BYTES 8
 #define WIDTH (W_BYTES * 8)
 #define FINE 10
@@ -99,28 +99,28 @@ int main( int argc, char* argv[] ) {
     file = std::ofstream(argv[3], std::ios_base::trunc);
   }
   
-  int n_bytes = 128;
+  int n_bytes = 0x8000;
   byte *out_bytes = new byte[2];
   byte *in_bytes = new byte[n_bytes];
   
   for(int test_count = 0; test_count < N_TESTS; test_count++){
     fprintf(stderr, "Test %i\n", test_count);
     //int n_bytes = rand() & 0xFF;
-    out_bytes[0] = 0;
-    out_bytes[1] = n_bytes;
+    out_bytes[0] = (n_bytes >> 8) & 0xFF;
+    out_bytes[1] = n_bytes & 0xFF;
     //out_bytes[1] = 255 - n_bytes;
     for(int i = 0; i < n_bytes; i++){
       in_bytes[i] = 0xBA;
     }
     
-    printf("Requesting %i bytes\n", out_bytes[1]);
+    printf("Requesting %i bytes\n", n_bytes);
     
     DptiIO(hif, out_bytes, 2, NULL, 0, false);
     
 
-    printf("Request Sent\nReceiving %i bytes\n", out_bytes[1]);
+    printf("Request Sent\nReceiving %i bytes\n", n_bytes);
     
-    DptiIO(hif, NULL, 0, in_bytes, out_bytes[1], false);
+    DptiIO(hif, NULL, 0, in_bytes, n_bytes, false);
 
     //printf("Data Received\nRequesting Remaining %i bytes\n", out_bytes[1]);
     
@@ -135,7 +135,7 @@ int main( int argc, char* argv[] ) {
     unsigned int prev_fine = 0;
     double prev_time = 0;
     
-    for(int i = 0; (i+W_BYTES) <= out_bytes[1]; i+=W_BYTES){
+    for(int i = 0; (i+W_BYTES) <= n_bytes; i+=W_BYTES){
       fprintf(stderr, "i = %i\n", i);
       int j;
       for(j = 0; j < W_BYTES; j++){
